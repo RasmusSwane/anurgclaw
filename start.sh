@@ -20,6 +20,39 @@ hc_is_true() {
   esac
 }
 
+normalize_json_env_payload() {
+  local raw
+  raw="$(trim_var "${1:-}")"
+  [ -n "$raw" ] || return 1
+  if jq -e . >/dev/null 2>&1 <<<"$raw"; then
+    printf '%s\n' "$raw"
+    return 0
+  fi
+  if [[ "$raw" == base64:* ]]; then
+    raw="${raw#base64:}"
+  fi
+  local decoded=""
+  decoded=$(printf '%s' "$raw" | base64 -d 2>/dev/null || true)
+  [ -n "$decoded" ] || return 1
+  jq -e . >/dev/null 2>&1 <<<"$decoded" || return 1
+  printf '%s\n' "$decoded"
+}
+
+load_json_env_var() {
+  local var_name="$1"
+  local label="$2"
+  local normalized=""
+  normalized=$(normalize_json_env_payload "${!var_name:-}") || {
+    echo "ERROR: ${label} must contain valid JSON (raw JSON or base64:...)." >&2
+    return 1
+  }
+  jq -e 'type == "object"' >/dev/null 2>&1 <<<"$normalized" || {
+    echo "ERROR: ${label} must decode to a JSON object." >&2
+    return 1
+  }
+  printf '%s\n' "$normalized"
+}
+
 load_env_bundle() {
   # HUGGINGCLAW_ENV_BUNDLE is a single base64url-encoded JSON object generated
   # by /env-builder. Existing individual env vars win over bundled values.
@@ -58,38 +91,41 @@ PYBUNDLE
 
 load_env_bundle
 
+OPENCLAW_CONFIG_IMPORT_JSON=""
+if [ -n "${OPENCLAW_CONFIG:-}" ]; then
+  OPENCLAW_CONFIG_IMPORT_JSON=$(load_json_env_var "OPENCLAW_CONFIG" "OPENCLAW_CONFIG") || exit 1
+  echo "OPENCLAW_CONFIG provided — using it as a config bootstrap base."
+fi
+
+OPENCLAW_AUTH_PROFILES_IMPORT_JSON=""
+if [ -n "${OPENCLAW_AUTH_PROFILES:-}" ]; then
+  OPENCLAW_AUTH_PROFILES_IMPORT_JSON=$(load_json_env_var "OPENCLAW_AUTH_PROFILES" "OPENCLAW_AUTH_PROFILES") || exit 1
+  echo "OPENCLAW_AUTH_PROFILES provided — bootstrapping main agent auth profiles."
+fi
+
 # Allow a full OpenClaw export import path to satisfy required runtime values.
 # If direct secrets are missing, bootstrap them from OPENCLAW_CONFIG /
 # OPENCLAW_AUTH_PROFILES (raw JSON or base64:...).
 bootstrap_core_secrets_from_openclaw_exports() {
-  [ -n "${OPENCLAW_CONFIG:-}" ] || [ -n "${OPENCLAW_AUTH_PROFILES:-}" ] || return 0
-  eval "$(python3 - <<'PYBOOTSTRAP'
-import base64
+  [ -n "$OPENCLAW_CONFIG_IMPORT_JSON" ] || [ -n "$OPENCLAW_AUTH_PROFILES_IMPORT_JSON" ] || return 0
+  eval "$(OPENCLAW_CONFIG_IMPORT_JSON="$OPENCLAW_CONFIG_IMPORT_JSON" OPENCLAW_AUTH_PROFILES_IMPORT_JSON="$OPENCLAW_AUTH_PROFILES_IMPORT_JSON" python3 - <<'PYBOOTSTRAP'
 import json
 import os
 import shlex
 
-def decode_json_payload(raw: str):
-    raw = (raw or "").strip()
+def parse_obj(raw: str):
     if not raw:
         return {}
-    if raw.startswith("base64:"):
-        raw = raw[7:]
-    for decoder in (
-        lambda v: json.loads(v),
-        lambda v: json.loads(base64.b64decode(v + "=" * (-len(v) % 4)).decode("utf-8")),
-        lambda v: json.loads(base64.urlsafe_b64decode(v + "=" * (-len(v) % 4)).decode("utf-8")),
-    ):
-        try:
-            decoded = decoder(raw)
-            if isinstance(decoded, dict):
-                return decoded
-        except Exception:
-            pass
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
     return {}
 
-cfg = decode_json_payload(os.environ.get("OPENCLAW_CONFIG", ""))
-auth_profiles = decode_json_payload(os.environ.get("OPENCLAW_AUTH_PROFILES", ""))
+cfg = parse_obj(os.environ.get("OPENCLAW_CONFIG_IMPORT_JSON", ""))
+auth_profiles = parse_obj(os.environ.get("OPENCLAW_AUTH_PROFILES_IMPORT_JSON", ""))
 
 model = cfg.get("agents", {}).get("defaults", {}).get("model")
 if isinstance(model, dict):
@@ -430,51 +466,6 @@ if [ -n "${CLOUDFLARE_WORKERS_TOKEN:-}" ] || [ -n "${CLOUDFLARE_PROXY_URL:-}" ];
   if [ -f "$CF_PROXY_ENV_FILE" ]; then
     . "$CF_PROXY_ENV_FILE"
   fi
-fi
-
-normalize_json_env_payload() {
-  local raw
-  raw="$(trim_var "${1:-}")"
-  [ -n "$raw" ] || return 1
-  if jq -e . >/dev/null 2>&1 <<<"$raw"; then
-    printf '%s\n' "$raw"
-    return 0
-  fi
-  if [[ "$raw" == base64:* ]]; then
-    raw="${raw#base64:}"
-  fi
-  local decoded=""
-  decoded=$(printf '%s' "$raw" | base64 -d 2>/dev/null || true)
-  [ -n "$decoded" ] || return 1
-  jq -e . >/dev/null 2>&1 <<<"$decoded" || return 1
-  printf '%s\n' "$decoded"
-}
-
-load_json_env_var() {
-  local var_name="$1"
-  local label="$2"
-  local normalized=""
-  normalized=$(normalize_json_env_payload "${!var_name:-}") || {
-    echo "ERROR: ${label} must contain valid JSON (raw JSON or base64:...)." >&2
-    return 1
-  }
-  jq -e 'type == "object"' >/dev/null 2>&1 <<<"$normalized" || {
-    echo "ERROR: ${label} must decode to a JSON object." >&2
-    return 1
-  }
-  printf '%s\n' "$normalized"
-}
-
-OPENCLAW_CONFIG_IMPORT_JSON=""
-if [ -n "${OPENCLAW_CONFIG:-}" ]; then
-  OPENCLAW_CONFIG_IMPORT_JSON=$(load_json_env_var "OPENCLAW_CONFIG" "OPENCLAW_CONFIG") || exit 1
-  echo "OPENCLAW_CONFIG provided — using it as a config bootstrap base."
-fi
-
-OPENCLAW_AUTH_PROFILES_IMPORT_JSON=""
-if [ -n "${OPENCLAW_AUTH_PROFILES:-}" ]; then
-  OPENCLAW_AUTH_PROFILES_IMPORT_JSON=$(load_json_env_var "OPENCLAW_AUTH_PROFILES" "OPENCLAW_AUTH_PROFILES") || exit 1
-  echo "OPENCLAW_AUTH_PROFILES provided — bootstrapping main agent auth profiles."
 fi
 
 # ── Build config ──
