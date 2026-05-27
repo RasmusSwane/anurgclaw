@@ -19,18 +19,6 @@ secrets:
     description: "Model ID to use, e.g. google/gemini-2.5-flash or openai/gpt-5.4."
   - name: GATEWAY_TOKEN
     description: "Strong token to secure your OpenClaw Control UI (generate: openssl rand -hex 32)."
-  - name: JUPYTER_TOKEN
-    description: "Optional token for the JupyterLab terminal at /terminal/. Defaults to GATEWAY_TOKEN when set — no extra secret needed."
-  - name: CLOUDFLARE_WORKERS_TOKEN
-    description: "Cloudflare API token — auto-creates a Worker proxy and KeepAlive monitor."
-  - name: TELEGRAM_ALLOWED_USERS
-    description: "Comma-separated Telegram user IDs for access"
-  - name: TELEGRAM_BOT_TOKEN
-    description: "Telegram bot token from BotFather"
-  - name: HF_TOKEN
-    description: "HuggingFace token with Write access — enables automatic workspace backup."
-  - name: WHATSAPP_ENABLED
-    description: "Set to 'true' to enable WhatsApp pairing support."
 ---
 
 <!-- Badges -->
@@ -117,7 +105,7 @@ Each fallback provider needs its own API key set as a separate secret (e.g. `ANT
 
 If you want to pin a specific OpenClaw release instead of `latest`, add `OPENCLAW_VERSION` under **Variables** in your Space settings. For Docker Spaces, HF passes Variables as build args during image build, so these should be Variables, not Secrets (except tokens).
 
-If you already have exported OpenClaw files, you can also paste them into `OPENCLAW_CONFIG` (`openclaw.json`) and `OPENCLAW_AUTH_PROFILES` (`auth-profiles.json`). HuggingClaw writes them into the standard OpenClaw paths and still reapplies runtime-managed features like Cloudflare proxy setup, browser/plugin toggles, and channel wiring.
+If you already have exported OpenClaw files, you can also paste them into `OPENCLAW_CONFIG` (`openclaw.json`) and `OPENCLAW_AUTH_PROFILES` (`auth-profiles.json`). HuggingClaw writes them into the standard OpenClaw paths and still reapplies runtime-managed features like Cloudflare proxy setup, browser/plugin toggles, and channel wiring. When those exported files already include your gateway token, model, and provider key, HuggingClaw will auto-use them at startup so you don’t need to duplicate those values in separate secrets.
 
 ### Step 3: Deploy & Run
 

@@ -58,6 +58,73 @@ PYBUNDLE
 
 load_env_bundle
 
+# Allow a full OpenClaw export import path to satisfy required runtime values.
+# If direct secrets are missing, bootstrap them from OPENCLAW_CONFIG /
+# OPENCLAW_AUTH_PROFILES (raw JSON or base64:...).
+bootstrap_core_secrets_from_openclaw_exports() {
+  [ -n "${OPENCLAW_CONFIG:-}" ] || [ -n "${OPENCLAW_AUTH_PROFILES:-}" ] || return 0
+  eval "$(python3 - <<'PYBOOTSTRAP'
+import base64
+import json
+import os
+import shlex
+
+def decode_json_payload(raw: str):
+    raw = (raw or "").strip()
+    if not raw:
+        return {}
+    if raw.startswith("base64:"):
+        raw = raw[7:]
+    for decoder in (
+        lambda v: json.loads(v),
+        lambda v: json.loads(base64.b64decode(v + "=" * (-len(v) % 4)).decode("utf-8")),
+        lambda v: json.loads(base64.urlsafe_b64decode(v + "=" * (-len(v) % 4)).decode("utf-8")),
+    ):
+        try:
+            decoded = decoder(raw)
+            if isinstance(decoded, dict):
+                return decoded
+        except Exception:
+            pass
+    return {}
+
+cfg = decode_json_payload(os.environ.get("OPENCLAW_CONFIG", ""))
+auth_profiles = decode_json_payload(os.environ.get("OPENCLAW_AUTH_PROFILES", ""))
+
+model = cfg.get("agents", {}).get("defaults", {}).get("model")
+if isinstance(model, dict):
+    model = model.get("primary")
+if not isinstance(model, str):
+    model = ""
+model = model.strip()
+
+token = cfg.get("gateway", {}).get("auth", {}).get("token", "")
+if not isinstance(token, str):
+    token = ""
+token = token.strip()
+
+api_key = ""
+profiles = auth_profiles.get("profiles", {})
+if isinstance(profiles, dict):
+    for entry in profiles.values():
+        if isinstance(entry, dict):
+            candidate = entry.get("key", "")
+            if isinstance(candidate, str) and candidate.strip():
+                api_key = candidate.strip()
+                break
+
+if not os.environ.get("LLM_MODEL", "").strip() and model:
+    print(f"export LLM_MODEL={shlex.quote(model)}")
+if not os.environ.get("GATEWAY_TOKEN", "").strip() and token:
+    print(f"export GATEWAY_TOKEN={shlex.quote(token)}")
+if not os.environ.get("LLM_API_KEY", "").strip() and api_key:
+    print(f"export LLM_API_KEY={shlex.quote(api_key)}")
+PYBOOTSTRAP
+)"
+}
+
+bootstrap_core_secrets_from_openclaw_exports
+
 # Normalize core env values so accidental surrounding spaces in HF Variables
 # do not block updates or cause stale comparisons/merges.
 LLM_MODEL="$(trim_var "${LLM_MODEL:-}")"
@@ -163,9 +230,9 @@ if [ -z "$GATEWAY_TOKEN" ]; then
   ERRORS="${ERRORS}  - GATEWAY_TOKEN is not set (generate: openssl rand -hex 32)\n"
 fi
 if [ -n "$ERRORS" ]; then
-  echo "Missing required secrets:"
+  echo "Missing required setup values:"
   echo -e "$ERRORS"
-  echo "Add them in HF Spaces → Settings → Secrets"
+  echo "Set LLM_API_KEY, LLM_MODEL, and GATEWAY_TOKEN (or provide OPENCLAW_CONFIG + OPENCLAW_AUTH_PROFILES containing them)."
   exit 1
 fi
 
