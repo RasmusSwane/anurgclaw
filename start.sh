@@ -1073,7 +1073,7 @@ target_providers = {"nvidia-nim", "nvidia"}
 updated = False
 index = 0
 
-for profile_name, entry in profiles.items():
+for _, entry in profiles.items():
     if not isinstance(entry, dict):
         continue
     provider = str(entry.get("provider", "")).strip().lower()
@@ -1082,6 +1082,7 @@ for profile_name, entry in profiles.items():
     entry_type = str(entry.get("type", "")).strip().lower()
     entry_mode = str(entry.get("mode", "")).strip().lower()
     if entry_type == "api_key" or entry_mode == "api_key":
+        # Assign current secrets in profile order and wrap when key pool is smaller.
         desired_key = keys[index % len(keys)]
         index += 1
         if entry.get("key") != desired_key:
