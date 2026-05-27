@@ -1048,21 +1048,21 @@ if not isinstance(data, dict):
 
 keys = []
 
-def add_key(value: str):
+def add_unique_key(value: str):
     value = (value or "").strip()
     if value and value not in keys:
         keys.append(value)
 
-def add_csv(env_name: str):
+def add_keys_from_csv_env(env_name: str):
     for item in os.environ.get(env_name, "").split(","):
-        add_key(item)
+        add_unique_key(item)
 
-add_csv("NVIDIA_API_KEYS")
-add_key(os.environ.get("NVIDIA_API_KEY", ""))
+add_keys_from_csv_env("NVIDIA_API_KEYS")
+add_unique_key(os.environ.get("NVIDIA_API_KEY", ""))
 
 fallback_enabled = os.environ.get("LLM_API_KEY_FALLBACK_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
 if fallback_enabled:
-    add_key(os.environ.get("LLM_API_KEY", ""))
+    add_unique_key(os.environ.get("LLM_API_KEY", ""))
 
 profiles = data.get("profiles")
 if not isinstance(profiles, dict) or not keys:
@@ -1081,7 +1081,7 @@ for profile_name, entry in profiles.items():
         continue
     entry_type = str(entry.get("type", "")).strip().lower()
     entry_mode = str(entry.get("mode", "")).strip().lower()
-    if entry_type == "api_key" or entry_mode == "api_key" or "key" in entry:
+    if entry_type == "api_key" or entry_mode == "api_key":
         desired_key = keys[index % len(keys)]
         index += 1
         if entry.get("key") != desired_key:
