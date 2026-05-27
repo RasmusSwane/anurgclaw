@@ -1,0 +1,690 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.4.26",
+    "lastTouchedAt": "2026-04-28T17:11:19.289Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-02-02T09:08:58.799Z",
+    "lastRunVersion": "2026.1.30",
+    "lastRunCommand": "configure",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "key1": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key2": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key3": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key4": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key5": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key6": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key7": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key8": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key9": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key10": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key11": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key12": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key13": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key14": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key15": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key16": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key17": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key18": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key19": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key20": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key21": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key22": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key23": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key24": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key25": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key26": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key27": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key28": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key29": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key30": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key31": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      },
+      "key32": {
+        "provider": "nvidia-nim",
+        "mode": "api_key"
+      }
+    },
+    "order": {
+      "nvidia-nim": [
+        "key1",
+        "key2",
+        "key3",
+        "key4",
+        "key5",
+        "key6",
+        "key7",
+        "key8",
+        "key9",
+        "key10",
+        "key11",
+        "key12",
+        "key13",
+        "key14",
+        "key15",
+        "key16",
+        "key17",
+        "key18",
+        "key19",
+        "key20",
+        "key21",
+        "key22",
+        "key23",
+        "key24",
+        "key25",
+        "key26",
+        "key27",
+        "key28",
+        "key29",
+        "key30",
+        "key31",
+        "key32"
+      ]
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "nvidia-nim": {
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "deepseek-ai/deepseek-v4-flash",
+            "name": "DeepSeek V4 Flash",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 16384
+          },
+          {
+            "id": "moonshotai/kimi-k2.6",
+            "name": "Kimi K2.6",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 16384
+          },
+          {
+            "id": "z-ai/glm-5.1",
+            "name": "GLM-5.1",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 205000,
+            "maxTokens": 16384
+          },
+          {
+            "id": "z-ai/glm5",
+            "name": "GLM-5",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 205000,
+            "maxTokens": 16384
+          },
+          {
+            "id": "z-ai/glm4.7",
+            "name": "GLM 4.7",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 16384
+          },
+          {
+            "id": "deepseek-ai/deepseek-v3.2",
+            "name": "DeepSeek V3.2",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192
+          },
+          {
+            "id": "deepseek-ai/deepseek-v4-pro",
+            "name": "DeepSeek V4 Pro",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen/qwen3.5-397b-a17b",
+            "name": "Qwen 3.5 397B",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 16384,
+            "compat": {
+              "supportsDeveloperRole": false
+            }
+          },
+          {
+            "id": "qwen/qwen3.5-122b-a10b",
+            "name": "Qwen 3.5 122B",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 16384,
+            "compat": {
+              "supportsDeveloperRole": false
+            }
+          },
+          {
+            "id": "stepfun-ai/step-3.5-flash",
+            "name": "Step 3.5 Flash",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 16384
+          },
+          {
+            "id": "minimaxai/minimax-m2.5",
+            "name": "MiniMax M2.5",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192
+          },
+          {
+            "id": "minimaxai/minimax-m2.7",
+            "name": "MiniMax M2.7",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192
+          },
+          {
+            "id": "nvidia/nemotron-3-super-120b-a12b",
+            "name": "Nemotron 3 Super 120B",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 16384
+          },
+          {
+            "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+            "name": "Nemotron 3 Nano Omni 30B",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 65536
+          },
+          {
+            "id": "mistralai/mistral-small-4-119b-2603",
+            "name": "Mistral Small 4 119B",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 128000,
+            "maxTokens": 16384
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "nvidia-nim/deepseek-ai/deepseek-v4-flash",
+        "fallbacks": [
+          "nvidia-nim/moonshotai/kimi-k2.6",
+          "nvidia-nim/z-ai/glm-5.1",
+          "nvidia-nim/z-ai/glm5",
+          "nvidia-nim/z-ai/glm4.7",
+          "nvidia-nim/deepseek-ai/deepseek-v3.2",
+          "nvidia-nim/deepseek-ai/deepseek-v4-pro",
+          "nvidia-nim/qwen/qwen3.5-397b-a17b",
+          "nvidia-nim/qwen/qwen3.5-122b-a10b",
+          "nvidia-nim/stepfun-ai/step-3.5-flash",
+          "nvidia-nim/minimaxai/minimax-m2.7"
+        ]
+      },
+      "models": {
+        "nvidia-nim/z-ai/glm5": {
+          "alias": "NIM-GLM5",
+          "params": {
+            "temperature": 1,
+            "top_p": 1,
+            "chat_template_kwargs": {
+              "enable_thinking": true,
+              "clear_thinking": false
+            }
+          }
+        },
+        "nvidia-nim/z-ai/glm-5.1": {
+          "alias": "NIM-GLM5.1",
+          "params": {
+            "temperature": 1,
+            "top_p": 1,
+            "chat_template_kwargs": {
+              "enable_thinking": true,
+              "clear_thinking": false
+            }
+          }
+        },
+        "nvidia-nim/minimaxai/minimax-m2.1": {
+          "alias": "NIM-MiniMax",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.95
+          }
+        },
+        "nvidia-nim/qwen/qwen3.5-397b-a17b": {
+          "alias": "NIM-Qwen3.5",
+          "params": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20,
+            "presence_penalty": 0,
+            "repetition_penalty": 1,
+            "chat_template_kwargs": {
+              "enable_thinking": true
+            }
+          }
+        },
+        "nvidia-nim/stepfun-ai/step-3.5-flash": {
+          "alias": "NIM-StepFun",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.9,
+            "chat_template_kwargs": {
+              "enable_thinking": true,
+              "clear_thinking": true
+            }
+          }
+        },
+        "nvidia-nim/z-ai/glm4.7": {
+          "alias": "NIM-GLM4.7",
+          "params": {
+            "temperature": 1,
+            "top_p": 1,
+            "chat_template_kwargs": {
+              "enable_thinking": true,
+              "clear_thinking": false
+            }
+          }
+        },
+        "nvidia-nim/deepseek-ai/deepseek-v3.2": {
+          "alias": "NIM-DeepSeek",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.95,
+            "chat_template_kwargs": {
+              "thinking": true
+            }
+          }
+        },
+        "nvidia-nim/deepseek-ai/deepseek-v4-pro": {
+          "alias": "NIM-DeepSeekV4Pro",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.95,
+            "max_tokens": 8192,
+            "chat_template_kwargs": {
+              "thinking": true,
+              "reasoning_effort": "high"
+            }
+          }
+        },
+        "nvidia-nim/deepseek-ai/deepseek-v4-flash": {
+          "alias": "NIM-DeepSeekV4Flash",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.95,
+            "max_tokens": 16384,
+            "chat_template_kwargs": {
+              "thinking": true,
+              "reasoning_effort": "high"
+            }
+          }
+        },
+        "nvidia-nim/minimaxai/minimax-m2.5": {
+          "alias": "NIM-MiniMax25",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.95
+          }
+        },
+        "nvidia-nim/minimaxai/minimax-m2.7": {
+          "alias": "NIM-MiniMax27",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.95
+          }
+        },
+        "nvidia-nim/qwen/qwen3.5-122b-a10b": {
+          "alias": "NIM-Qwen122B",
+          "params": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "chat_template_kwargs": {
+              "enable_thinking": true
+            }
+          }
+        },
+        "nvidia-nim/nvidia/nemotron-3-super-120b-a12b": {
+          "alias": "NIM-Nemotron",
+          "params": {
+            "temperature": 1,
+            "top_p": 0.95,
+            "chat_template_kwargs": {
+              "enable_thinking": true
+            },
+            "reasoning_budget": 16384
+          }
+        },
+        "nvidia-nim/mistralai/mistral-small-4-119b-2603": {
+          "alias": "NIM-MistralSmall4",
+          "params": {
+            "temperature": 0.1,
+            "top_p": 1,
+            "max_tokens": 16384
+          }
+        },
+        "nvidia-nim/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": {
+          "alias": "NIM-NemotronNano",
+          "params": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "chat_template_kwargs": {
+              "enable_thinking": true
+            },
+            "reasoning_budget": 16384
+          }
+        },
+        "nvidia-nim/moonshotai/kimi-k2.6": {
+          "alias": "NIM-Kimi",
+          "params": {
+            "chat_template_kwargs": {
+              "thinking": true
+            }
+          }
+        }
+      },
+      "workspace": "/home/runner/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 2,
+      "subagents": {
+        "maxConcurrent": 3,
+        "archiveAfterMinutes": 60
+      }
+    }
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "allowlist",
+      "botToken": "7277111911:AAFYfRFi8Sg8r-0bknZ2EwQS1-HbI_gtNKE",
+      "allowFrom": [
+        "612867689"
+      ],
+      "groupPolicy": "allowlist",
+      "streaming": {
+        "mode": "partial"
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "openclaw"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "browser": {
+    "enabled": true,
+    "headless": true,
+    "noSandbox": true,
+    "defaultProfile": "openclaw",
+    "profiles": {
+      "openclaw": {
+        "cdpPort": 18800,
+        "color": "#FF4500"
+      }
+    },
+    "executablePath": "/home/runner/.cloakbrowser/chromium-146.0.7680.177.4/chrome"
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true
+      },
+      "browser": {
+        "enabled": true
+      }
+    }
+  }
+}
