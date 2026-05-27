@@ -1028,6 +1028,77 @@ backup_config_copy() {
   cp -a "$src" "$backup" 2>/dev/null || cp "$src" "$backup" 2>/dev/null || true
 }
 
+sync_auth_profiles_with_current_secrets() {
+  local payload="$1"
+  AUTH_PROFILES_JSON="$payload" python3 - <<'PYAUTHPATCH'
+import json
+import os
+import sys
+
+raw = os.environ.get("AUTH_PROFILES_JSON", "")
+try:
+    data = json.loads(raw)
+except Exception:
+    print(raw)
+    sys.exit(0)
+
+if not isinstance(data, dict):
+    print(raw)
+    sys.exit(0)
+
+keys = []
+
+def add_key(value: str):
+    value = (value or "").strip()
+    if value and value not in keys:
+        keys.append(value)
+
+def add_csv(env_name: str):
+    for item in os.environ.get(env_name, "").split(","):
+        add_key(item)
+
+add_csv("NVIDIA_API_KEYS")
+add_key(os.environ.get("NVIDIA_API_KEY", ""))
+
+fallback_enabled = os.environ.get("LLM_API_KEY_FALLBACK_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+if fallback_enabled:
+    add_key(os.environ.get("LLM_API_KEY", ""))
+
+profiles = data.get("profiles")
+if not isinstance(profiles, dict) or not keys:
+    print(raw)
+    sys.exit(0)
+
+target_providers = {"nvidia-nim", "nvidia"}
+updated = False
+index = 0
+
+for _, entry in profiles.items():
+    if not isinstance(entry, dict):
+        continue
+    provider = str(entry.get("provider", "")).strip().lower()
+    if provider not in target_providers:
+        continue
+    entry_type = str(entry.get("type", "")).strip().lower()
+    entry_mode = str(entry.get("mode", "")).strip().lower()
+    if entry_type != "api_key" and entry_mode != "api_key" and "key" not in entry:
+        continue
+    desired_key = keys[index % len(keys)]
+    index += 1
+    if entry.get("key") != desired_key:
+        entry["key"] = desired_key
+        updated = True
+    if "type" not in entry and entry_mode == "api_key":
+        entry["type"] = "api_key"
+        updated = True
+
+if not updated:
+    print(raw)
+else:
+    print(json.dumps(data))
+PYAUTHPATCH
+}
+
 # Write config
 EXISTING_CONFIG="$OPENCLAW_CONFIG_PATH"
 WHATSAPP_CONFIG_ENABLED=false
@@ -1198,6 +1269,22 @@ if [ -n "$OPENCLAW_AUTH_PROFILES_IMPORT_JSON" ]; then
     exit 1
   }
   chmod 600 "$OPENCLAW_AUTH_PROFILES_PATH"
+fi
+
+if [ -f "$OPENCLAW_AUTH_PROFILES_PATH" ]; then
+  CURRENT_AUTH_PROFILES="$(cat "$OPENCLAW_AUTH_PROFILES_PATH" 2>/dev/null || true)"
+  if [ -n "$CURRENT_AUTH_PROFILES" ]; then
+    PATCHED_CURRENT_AUTH_PROFILES="$(sync_auth_profiles_with_current_secrets "$CURRENT_AUTH_PROFILES")"
+    if [ -n "$PATCHED_CURRENT_AUTH_PROFILES" ] && [ "$PATCHED_CURRENT_AUTH_PROFILES" != "$CURRENT_AUTH_PROFILES" ]; then
+      echo "Applying current API key secrets to nvidia auth profiles..."
+      backup_config_copy "$OPENCLAW_AUTH_PROFILES_PATH"
+      write_json_atomic "$OPENCLAW_AUTH_PROFILES_PATH" "$PATCHED_CURRENT_AUTH_PROFILES" || {
+        echo "ERROR: could not patch auth profiles with current secrets" >&2
+        exit 1
+      }
+      chmod 600 "$OPENCLAW_AUTH_PROFILES_PATH"
+    fi
+  fi
 fi
 
 # ── Enable Gateway Preload Fixes ──
