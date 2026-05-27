@@ -1038,7 +1038,7 @@ import sys
 raw = os.environ.get("AUTH_PROFILES_JSON", "")
 try:
     data = json.loads(raw)
-except Exception:
+except json.JSONDecodeError:
     print(raw)
     sys.exit(0)
 
@@ -1073,7 +1073,7 @@ target_providers = {"nvidia-nim", "nvidia"}
 updated = False
 index = 0
 
-for _, entry in profiles.items():
+for profile_name, entry in profiles.items():
     if not isinstance(entry, dict):
         continue
     provider = str(entry.get("provider", "")).strip().lower()
@@ -1081,16 +1081,15 @@ for _, entry in profiles.items():
         continue
     entry_type = str(entry.get("type", "")).strip().lower()
     entry_mode = str(entry.get("mode", "")).strip().lower()
-    if entry_type != "api_key" and entry_mode != "api_key" and "key" not in entry:
-        continue
-    desired_key = keys[index % len(keys)]
-    index += 1
-    if entry.get("key") != desired_key:
-        entry["key"] = desired_key
-        updated = True
-    if "type" not in entry and entry_mode == "api_key":
-        entry["type"] = "api_key"
-        updated = True
+    if entry_type == "api_key" or entry_mode == "api_key" or "key" in entry:
+        desired_key = keys[index % len(keys)]
+        index += 1
+        if entry.get("key") != desired_key:
+            entry["key"] = desired_key
+            updated = True
+        if "type" not in entry and entry_mode == "api_key":
+            entry["type"] = "api_key"
+            updated = True
 
 if not updated:
     print(raw)
