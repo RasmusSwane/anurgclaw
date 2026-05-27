@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "profiles": {
+    "key1": {
+      "type": "api_key",
+      "provider": "nvidia-nim",
+      "key": "nvapi-xxx"
+    },"key2": {
+      "type": "api_key",
+      "provider": "nvidia-nim",
+      "key": "nvapi-xxxx"
+    },......
+ }
+}
