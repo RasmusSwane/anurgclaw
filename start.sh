@@ -20,6 +20,39 @@ hc_is_true() {
   esac
 }
 
+normalize_json_env_payload() {
+  local raw
+  raw="$(trim_var "${1:-}")"
+  [ -n "$raw" ] || return 1
+  if jq -e . >/dev/null 2>&1 <<<"$raw"; then
+    printf '%s\n' "$raw"
+    return 0
+  fi
+  if [[ "$raw" == base64:* ]]; then
+    raw="${raw#base64:}"
+  fi
+  local decoded=""
+  decoded=$(printf '%s' "$raw" | base64 -d 2>/dev/null || true)
+  [ -n "$decoded" ] || return 1
+  jq -e . >/dev/null 2>&1 <<<"$decoded" || return 1
+  printf '%s\n' "$decoded"
+}
+
+load_json_env_var() {
+  local var_name="$1"
+  local label="$2"
+  local normalized=""
+  normalized=$(normalize_json_env_payload "${!var_name:-}") || {
+    echo "ERROR: ${label} must contain valid JSON (raw JSON or base64:...)." >&2
+    return 1
+  }
+  jq -e 'type == "object"' >/dev/null 2>&1 <<<"$normalized" || {
+    echo "ERROR: ${label} must decode to a JSON object." >&2
+    return 1
+  }
+  printf '%s\n' "$normalized"
+}
+
 load_env_bundle() {
   # HUGGINGCLAW_ENV_BUNDLE is a single base64url-encoded JSON object generated
   # by /env-builder. Existing individual env vars win over bundled values.
@@ -57,6 +90,76 @@ PYBUNDLE
 }
 
 load_env_bundle
+
+OPENCLAW_CONFIG_IMPORT_JSON=""
+if [ -n "${OPENCLAW_CONFIG:-}" ]; then
+  OPENCLAW_CONFIG_IMPORT_JSON=$(load_json_env_var "OPENCLAW_CONFIG" "OPENCLAW_CONFIG") || exit 1
+  echo "OPENCLAW_CONFIG provided — using it as a config bootstrap base."
+fi
+
+OPENCLAW_AUTH_PROFILES_IMPORT_JSON=""
+if [ -n "${OPENCLAW_AUTH_PROFILES:-}" ]; then
+  OPENCLAW_AUTH_PROFILES_IMPORT_JSON=$(load_json_env_var "OPENCLAW_AUTH_PROFILES" "OPENCLAW_AUTH_PROFILES") || exit 1
+  echo "OPENCLAW_AUTH_PROFILES provided — bootstrapping main agent auth profiles."
+fi
+
+# Allow a full OpenClaw export import path to satisfy required runtime values.
+# If direct secrets are missing, bootstrap them from OPENCLAW_CONFIG /
+# OPENCLAW_AUTH_PROFILES (raw JSON or base64:...).
+bootstrap_core_secrets_from_openclaw_exports() {
+  [ -n "$OPENCLAW_CONFIG_IMPORT_JSON" ] || [ -n "$OPENCLAW_AUTH_PROFILES_IMPORT_JSON" ] || return 0
+  eval "$(OPENCLAW_CONFIG_IMPORT_JSON="$OPENCLAW_CONFIG_IMPORT_JSON" OPENCLAW_AUTH_PROFILES_IMPORT_JSON="$OPENCLAW_AUTH_PROFILES_IMPORT_JSON" python3 - <<'PYBOOTSTRAP'
+import json
+import os
+import shlex
+
+def parse_obj(raw: str):
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return {}
+
+cfg = parse_obj(os.environ.get("OPENCLAW_CONFIG_IMPORT_JSON", ""))
+auth_profiles = parse_obj(os.environ.get("OPENCLAW_AUTH_PROFILES_IMPORT_JSON", ""))
+
+model = cfg.get("agents", {}).get("defaults", {}).get("model")
+if isinstance(model, dict):
+    model = model.get("primary")
+if not isinstance(model, str):
+    model = ""
+model = model.strip()
+
+token = cfg.get("gateway", {}).get("auth", {}).get("token", "")
+if not isinstance(token, str):
+    token = ""
+token = token.strip()
+
+api_key = ""
+profiles = auth_profiles.get("profiles", {})
+if isinstance(profiles, dict):
+    for entry in profiles.values():
+        if isinstance(entry, dict):
+            candidate = entry.get("key", "")
+            if isinstance(candidate, str) and candidate.strip():
+                api_key = candidate.strip()
+                break
+
+if not os.environ.get("LLM_MODEL", "").strip() and model:
+    print(f"export LLM_MODEL={shlex.quote(model)}")
+if not os.environ.get("GATEWAY_TOKEN", "").strip() and token:
+    print(f"export GATEWAY_TOKEN={shlex.quote(token)}")
+if not os.environ.get("LLM_API_KEY", "").strip() and api_key:
+    print(f"export LLM_API_KEY={shlex.quote(api_key)}")
+PYBOOTSTRAP
+)"
+}
+
+bootstrap_core_secrets_from_openclaw_exports
 
 # Normalize core env values so accidental surrounding spaces in HF Variables
 # do not block updates or cause stale comparisons/merges.
@@ -163,9 +266,9 @@ if [ -z "$GATEWAY_TOKEN" ]; then
   ERRORS="${ERRORS}  - GATEWAY_TOKEN is not set (generate: openssl rand -hex 32)\n"
 fi
 if [ -n "$ERRORS" ]; then
-  echo "Missing required secrets:"
+  echo "Missing required setup values:"
   echo -e "$ERRORS"
-  echo "Add them in HF Spaces → Settings → Secrets"
+  echo "Set LLM_API_KEY, LLM_MODEL, and GATEWAY_TOKEN (or provide OPENCLAW_CONFIG + OPENCLAW_AUTH_PROFILES containing them)."
   exit 1
 fi
 
@@ -363,51 +466,6 @@ if [ -n "${CLOUDFLARE_WORKERS_TOKEN:-}" ] || [ -n "${CLOUDFLARE_PROXY_URL:-}" ];
   if [ -f "$CF_PROXY_ENV_FILE" ]; then
     . "$CF_PROXY_ENV_FILE"
   fi
-fi
-
-normalize_json_env_payload() {
-  local raw
-  raw="$(trim_var "${1:-}")"
-  [ -n "$raw" ] || return 1
-  if jq -e . >/dev/null 2>&1 <<<"$raw"; then
-    printf '%s\n' "$raw"
-    return 0
-  fi
-  if [[ "$raw" == base64:* ]]; then
-    raw="${raw#base64:}"
-  fi
-  local decoded=""
-  decoded=$(printf '%s' "$raw" | base64 -d 2>/dev/null || true)
-  [ -n "$decoded" ] || return 1
-  jq -e . >/dev/null 2>&1 <<<"$decoded" || return 1
-  printf '%s\n' "$decoded"
-}
-
-load_json_env_var() {
-  local var_name="$1"
-  local label="$2"
-  local normalized=""
-  normalized=$(normalize_json_env_payload "${!var_name:-}") || {
-    echo "ERROR: ${label} must contain valid JSON (raw JSON or base64:...)." >&2
-    return 1
-  }
-  jq -e 'type == "object"' >/dev/null 2>&1 <<<"$normalized" || {
-    echo "ERROR: ${label} must decode to a JSON object." >&2
-    return 1
-  }
-  printf '%s\n' "$normalized"
-}
-
-OPENCLAW_CONFIG_IMPORT_JSON=""
-if [ -n "${OPENCLAW_CONFIG:-}" ]; then
-  OPENCLAW_CONFIG_IMPORT_JSON=$(load_json_env_var "OPENCLAW_CONFIG" "OPENCLAW_CONFIG") || exit 1
-  echo "OPENCLAW_CONFIG provided — using it as a config bootstrap base."
-fi
-
-OPENCLAW_AUTH_PROFILES_IMPORT_JSON=""
-if [ -n "${OPENCLAW_AUTH_PROFILES:-}" ]; then
-  OPENCLAW_AUTH_PROFILES_IMPORT_JSON=$(load_json_env_var "OPENCLAW_AUTH_PROFILES" "OPENCLAW_AUTH_PROFILES") || exit 1
-  echo "OPENCLAW_AUTH_PROFILES provided — bootstrapping main agent auth profiles."
 fi
 
 # ── Build config ──
