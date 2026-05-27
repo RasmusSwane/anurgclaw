@@ -76,7 +76,11 @@ JUPYTER_PORT="$(trim_var "${JUPYTER_PORT:-8888}")"
 BACKUP_DATASET_NAME="$(trim_var "${BACKUP_DATASET_NAME:-${BACKUP_DATASET:-huggingclaw-backup}}")"
 SPACE_AUTHOR_NAME="$(trim_var "${SPACE_AUTHOR_NAME:-}")"
 SPACE_HOST="$(trim_var "${SPACE_HOST:-}")"
-OPENCLAW_APP_DIR="/home/node/.openclaw/openclaw-app"
+OPENCLAW_HOME="/home/node/.openclaw"
+OPENCLAW_APP_DIR="$OPENCLAW_HOME/openclaw-app"
+OPENCLAW_CONFIG_PATH="$OPENCLAW_HOME/openclaw.json"
+OPENCLAW_MAIN_AGENT_DIR="$OPENCLAW_HOME/agents/main/agent"
+OPENCLAW_AUTH_PROFILES_PATH="$OPENCLAW_MAIN_AGENT_DIR/auth-profiles.json"
 OPENCLAW_RUNTIME_VERSION=""
 OPENCLAW_FILE_LOG_LEVEL_CONFIGURED=false
 OPENCLAW_CONSOLE_LOG_LEVEL_CONFIGURED=false
@@ -313,14 +317,15 @@ fi
 promote_first_pool_key "HUGGINGFACE_HUB_TOKEN" "HUGGINGFACE_HUB_TOKENS"
 
 # ── Setup directories ──
-mkdir -p /home/node/.openclaw/agents/main/sessions
-mkdir -p /home/node/.openclaw/credentials
-mkdir -p /home/node/.openclaw/memory
-mkdir -p /home/node/.openclaw/extensions
-mkdir -p /home/node/.openclaw/workspace
+mkdir -p "$OPENCLAW_MAIN_AGENT_DIR"
+mkdir -p "$OPENCLAW_HOME/agents/main/sessions"
+mkdir -p "$OPENCLAW_HOME/credentials"
+mkdir -p "$OPENCLAW_HOME/memory"
+mkdir -p "$OPENCLAW_HOME/extensions"
+mkdir -p "$OPENCLAW_HOME/workspace"
 mkdir -p /home/node/.local/bin /home/node/.local/lib /home/node/.npm-global
-chmod 700 /home/node/.openclaw
-chmod 700 /home/node/.openclaw/credentials
+chmod 700 "$OPENCLAW_HOME"
+chmod 700 "$OPENCLAW_HOME/credentials"
 
 # User-installed packages are intentionally ephemeral in the container. Keep
 # npm/pip installs in user-writable locations, make apt noninteractive,
@@ -358,6 +363,51 @@ if [ -n "${CLOUDFLARE_WORKERS_TOKEN:-}" ] || [ -n "${CLOUDFLARE_PROXY_URL:-}" ];
   if [ -f "$CF_PROXY_ENV_FILE" ]; then
     . "$CF_PROXY_ENV_FILE"
   fi
+fi
+
+normalize_json_env_payload() {
+  local raw
+  raw="$(trim_var "${1:-}")"
+  [ -n "$raw" ] || return 1
+  if jq -e . >/dev/null 2>&1 <<<"$raw"; then
+    printf '%s\n' "$raw"
+    return 0
+  fi
+  if [[ "$raw" == base64:* ]]; then
+    raw="${raw#base64:}"
+  fi
+  local decoded=""
+  decoded=$(printf '%s' "$raw" | base64 -d 2>/dev/null || true)
+  [ -n "$decoded" ] || return 1
+  jq -e . >/dev/null 2>&1 <<<"$decoded" || return 1
+  printf '%s\n' "$decoded"
+}
+
+load_json_env_var() {
+  local var_name="$1"
+  local label="$2"
+  local normalized=""
+  normalized=$(normalize_json_env_payload "${!var_name:-}") || {
+    echo "ERROR: ${label} must contain valid JSON (raw JSON or base64:...)." >&2
+    return 1
+  }
+  jq -e 'type == "object"' >/dev/null 2>&1 <<<"$normalized" || {
+    echo "ERROR: ${label} must decode to a JSON object." >&2
+    return 1
+  }
+  printf '%s\n' "$normalized"
+}
+
+OPENCLAW_CONFIG_IMPORT_JSON=""
+if [ -n "${OPENCLAW_CONFIG:-}" ]; then
+  OPENCLAW_CONFIG_IMPORT_JSON=$(load_json_env_var "OPENCLAW_CONFIG" "OPENCLAW_CONFIG") || exit 1
+  echo "OPENCLAW_CONFIG provided — using it as a config bootstrap base."
+fi
+
+OPENCLAW_AUTH_PROFILES_IMPORT_JSON=""
+if [ -n "${OPENCLAW_AUTH_PROFILES:-}" ]; then
+  OPENCLAW_AUTH_PROFILES_IMPORT_JSON=$(load_json_env_var "OPENCLAW_AUTH_PROFILES" "OPENCLAW_AUTH_PROFILES") || exit 1
+  echo "OPENCLAW_AUTH_PROFILES provided — bootstrapping main agent auth profiles."
 fi
 
 # ── Build config ──
@@ -883,6 +933,13 @@ if [ "$WHATSAPP_ENABLED_NORMALIZED" = "true" ]; then
   CONFIG_JSON=$(echo "$CONFIG_JSON" | jq '.channels.whatsapp = {"dmPolicy": "pairing"}')
 fi
 
+if [ -n "$OPENCLAW_CONFIG_IMPORT_JSON" ]; then
+  CONFIG_JSON=$(jq -n \
+    --argjson base "$OPENCLAW_CONFIG_IMPORT_JSON" \
+    --argjson runtime "$CONFIG_JSON" \
+    '$base * $runtime')
+fi
+
 
 validate_json_file() {
   local file="$1"
@@ -914,7 +971,7 @@ backup_config_copy() {
 }
 
 # Write config
-EXISTING_CONFIG="/home/node/.openclaw/openclaw.json"
+EXISTING_CONFIG="$OPENCLAW_CONFIG_PATH"
 WHATSAPP_CONFIG_ENABLED=false
 if [ "$WHATSAPP_ENABLED_NORMALIZED" = "true" ]; then
   WHATSAPP_CONFIG_ENABLED=true
@@ -1058,6 +1115,32 @@ else
   write_json_atomic "$EXISTING_CONFIG" "$CONFIG_JSON" || { echo "ERROR: could not write valid config" >&2; exit 1; }
 fi
 chmod 600 "$EXISTING_CONFIG"
+
+if [ -n "$OPENCLAW_AUTH_PROFILES_IMPORT_JSON" ]; then
+  MERGED_AUTH_PROFILES="$OPENCLAW_AUTH_PROFILES_IMPORT_JSON"
+  if [ -f "$OPENCLAW_AUTH_PROFILES_PATH" ]; then
+    echo "Restored auth profiles found — merging OPENCLAW_AUTH_PROFILES..."
+    MERGED_AUTH_PROFILES=$(jq \
+      --argjson desired "$OPENCLAW_AUTH_PROFILES_IMPORT_JSON" \
+      '. as $existing
+       | ($existing * $desired)
+       | .profiles = (($existing.profiles // {}) + ($desired.profiles // {}))
+       | .version = ($desired.version // $existing.version // 1)' \
+      "$OPENCLAW_AUTH_PROFILES_PATH" 2>/dev/null) || {
+        echo "Existing auth profiles are invalid — replacing them from OPENCLAW_AUTH_PROFILES."
+        MERGED_AUTH_PROFILES="$OPENCLAW_AUTH_PROFILES_IMPORT_JSON"
+      }
+    backup_config_copy "$OPENCLAW_AUTH_PROFILES_PATH"
+  else
+    echo "No auth profiles found — writing OPENCLAW_AUTH_PROFILES..."
+  fi
+
+  write_json_atomic "$OPENCLAW_AUTH_PROFILES_PATH" "$MERGED_AUTH_PROFILES" || {
+    echo "ERROR: could not write valid auth profiles" >&2
+    exit 1
+  }
+  chmod 600 "$OPENCLAW_AUTH_PROFILES_PATH"
+fi
 
 # ── Enable Gateway Preload Fixes ──
 # This preload script keeps iframe embedding working on HF Spaces.
