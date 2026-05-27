@@ -464,6 +464,26 @@ const FIELDS = [
 {
     "g": "Core",
     "icon": "⚡",
+    "k": "OPENCLAW_CONFIG",
+    "lbl": "Bootstrap openclaw.json",
+    "type": "textarea",
+    "ph": "{\n  \"gateway\": {\"auth\": {\"mode\": \"password\"}}\n}",
+    "tag": "advanced",
+    "help": "Optional raw JSON (or base64:...) merged into /home/node/.openclaw/openclaw.json before HuggingClaw reapplies runtime-managed settings like Cloudflare, channels, browser, and logging."
+  },
+{
+    "g": "Core",
+    "icon": "⚡",
+    "k": "OPENCLAW_AUTH_PROFILES",
+    "lbl": "Bootstrap auth-profiles.json",
+    "type": "textarea",
+    "ph": "{\n  \"version\": 1,\n  \"profiles\": {}\n}",
+    "tag": "advanced",
+    "help": "Optional raw JSON (or base64:...) written to /home/node/.openclaw/agents/main/agent/auth-profiles.json, merging with any restored profiles for the main agent."
+  },
+{
+    "g": "Core",
+    "icon": "⚡",
     "k": "OPENCLAW_VERSION",
     "lbl": "Pin OpenClaw version (build-time; rebuild required)",
     "type": "text",

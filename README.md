@@ -117,6 +117,8 @@ Each fallback provider needs its own API key set as a separate secret (e.g. `ANT
 
 If you want to pin a specific OpenClaw release instead of `latest`, add `OPENCLAW_VERSION` under **Variables** in your Space settings. For Docker Spaces, HF passes Variables as build args during image build, so these should be Variables, not Secrets (except tokens).
 
+If you already have exported OpenClaw files, you can also paste them into `OPENCLAW_CONFIG` (`openclaw.json`) and `OPENCLAW_AUTH_PROFILES` (`auth-profiles.json`). HuggingClaw writes them into the standard OpenClaw paths and still reapplies runtime-managed features like Cloudflare proxy setup, browser/plugin toggles, and channel wiring.
+
 ### Step 3: Deploy & Run
 
 That's it! The Space will build the container and start up automatically. You can monitor the build process in the **Logs** tab.
@@ -254,6 +256,8 @@ Configure password access and network restrictions:
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `OPENCLAW_PASSWORD` | — | Enable simple password auth instead of token (applies only when `GATEWAY_TOKEN` is empty) |
+| `OPENCLAW_CONFIG` | — | Optional raw JSON (or `base64:...`) bootstrap merged into `~/.openclaw/openclaw.json` before runtime feature patches are reapplied |
+| `OPENCLAW_AUTH_PROFILES` | — | Optional raw JSON (or `base64:...`) bootstrap merged into `~/.openclaw/agents/main/agent/auth-profiles.json` |
 | `TRUSTED_PROXIES` | — | Comma-separated IPs of HF proxies |
 | `ALLOWED_ORIGINS` | — | Comma-separated allowed origins for Control UI |
 | `CLOUDFLARE_KEEPALIVE_ENABLED` | `true` | Set to `false` to disable the automatic Cloudflare KeepAlive worker |
