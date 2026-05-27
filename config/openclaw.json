@@ -636,7 +636,7 @@
     "telegram": {
       "enabled": true,
       "dmPolicy": "allowlist",
-      "botToken": "7277111911:AAFYfRFi8Sg8r-0bknZ2EwQS1-HbI_gtNKE",
+      "botToken": "7277111911:AAFYfRFi8Sg8r-0bknZ2EwQS1-HbI_gtxxx",
       "allowFrom": [
         "612867689"
       ],
